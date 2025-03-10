@@ -1,1 +1,1 @@
-{"root":["./src/index.ts"],"version":"5.7.3"}
+{"root":["./src/chat.ts","./src/index.ts","./src/prompts.ts","./src/types.ts"],"version":"5.7.3"}
