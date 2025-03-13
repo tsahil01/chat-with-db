@@ -1,11 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
+import { Message } from './types';
+import { chat } from './chat';
 dotenv.config();
 
 const app = express();
 const port = 3000;
 app.use(express.json());
+
 const tablesQuery = `
 SELECT table_name
 FROM information_schema.tables
@@ -19,14 +22,14 @@ WHERE table_name = $1;
 `;
 
 
-
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-app.post('/chat', (req, res) => {
+app.post('/chat', async (req, res) => {
     const { messages, prompt } = req.body;
-    res.send('Chat message received!');
+    const response = await chat(messages, { role: 'user', content: prompt });
+    res.json({ response });
 });
 
 app.post('/schema', async (req, res) => {
@@ -35,10 +38,8 @@ app.post('/schema', async (req, res) => {
         const pool = await new Pool({
             connectionString: DB_URL
         });
-        console.log("Connected to database!");
 
         const tables = await pool.query(tablesQuery);
-
         const schema: { [key: string]: any } = {};
 
         for (const table of tables.rows) {

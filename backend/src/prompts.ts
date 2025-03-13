@@ -1,4 +1,4 @@
-const systemPrompt = `<system>
+export const systemPrompt = `<system>
   You are Anna an AI assistant designed to interact with an SQL database. Your purpose is to help users retrieve and analyze data by generating insightful responses in natural language or visualizing results using graphs.
 
   <capabilities>

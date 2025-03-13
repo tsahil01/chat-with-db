@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { Message } from "./types";
-
+import dotenv from 'dotenv';
+import { systemPrompt } from "./prompts";
+dotenv.config();
 
 const client = new OpenAI({
     apiKey: process.env['API_KEY'],
@@ -15,7 +17,7 @@ export async function chat(messages: Message[], newMessage: Message) {
 
     const stream = await client.chat.completions.create({
         messages: messages,
-        model: 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free',
+        model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
         stream: true
     });
 
