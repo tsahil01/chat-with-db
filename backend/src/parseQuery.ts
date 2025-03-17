@@ -1,3 +1,5 @@
+import { ParsedResponse } from "./types";
+
 /**
  * Parses a response string to extract various components such as SQL queries,
  * JSON visualizations, or text responses.
@@ -5,15 +7,7 @@
  * @param data The string response to parse
  * @returns An object containing the extracted components
  */
-export async function parseResponse(data: string) {
-    // Define types for the return object
-    interface ParsedResponse {
-        generatedSQL?: string;
-        visualization?: any;
-        textResponse?: string;
-        responseFormat?: string;
-        chartType?: string;
-    }
+export async function parseResponse(data: string): Promise<ParsedResponse> {
 
     const result: ParsedResponse = {};
 
