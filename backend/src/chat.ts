@@ -1,8 +1,9 @@
 import OpenAI from "openai";
 import { Message } from "./types";
-import dotenv from 'dotenv';
+import { config } from 'dotenv';
 import { systemPrompt } from "./prompts";
-dotenv.config();
+
+config();
 
 const client = new OpenAI({
     apiKey: process.env['API_KEY'],
