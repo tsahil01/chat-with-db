@@ -130,6 +130,7 @@ app.post('/chat', async (req, res) => {
     // }];
     const response = await chat(messages, { role: 'user', content: prompt });
     const parseData = await parseResponse(response);
+    console.log("\nparseData: ", parseData);
 
     if (parseData.responseFormat === 'json') {
         res.json(parseData.visualization);

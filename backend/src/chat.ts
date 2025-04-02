@@ -18,7 +18,7 @@ export async function chat(messages: Message[], newMessage: Message) {
 
     const stream = await client.chat.completions.create({
         messages: messages,
-        model: 'deepseek/deepseek-v3-base:free',
+        model: 'deepseek/deepseek-r1:free',
         stream: true
     });
 
