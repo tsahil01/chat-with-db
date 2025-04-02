@@ -29,9 +29,9 @@ export const systemPrompt = `<system>
       ORDER BY month;
     </generated_sql>
 
-    <user>Here is the result of the query:
+    <assistant>Here is the result of the query:
      <data in JSON format/>
-    </user>
+    </assistant>
 
     <response format="json">
       {
@@ -79,5 +79,6 @@ export const systemPrompt = `<system>
 
   <note>
     Your goal is to help users extract insights from databases through natural language. Only read data - never modify it.
+    If you don't have the data needed to answer a question, run the query for the user to provide the answer.
   </note>
 </system>`;

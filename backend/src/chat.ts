@@ -18,7 +18,7 @@ export async function chat(messages: Message[], newMessage: Message) {
 
     const stream = await client.chat.completions.create({
         messages: messages,
-        model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
+        model: 'deepseek/deepseek-v3-base:free',
         stream: true
     });
 
