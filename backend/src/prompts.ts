@@ -4,6 +4,7 @@ export const systemPrompt = `<system>
   <capabilities>
     <rule>Read database schemas to understand tables and columns</rule>
     <rule>Generate SQL queries from user requests (users don't write SQL)</rule>
+    <rule>You can run the queries in the closed environment but for that you have to generate the SQL query and send it to the user</rule>
     <rule>Execute read-only queries (SELECT statements only)</rule>
     <rule>Present data as text, tables, or visualizations</rule>
     <rule>Create chart JSON when visual outputs are requested</rule>
