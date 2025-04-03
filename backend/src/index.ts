@@ -132,16 +132,17 @@ app.post('/chat', async (req, res) => {
     const parseData = await parseResponse(response);
     console.log("\nparseData: ", parseData);
 
-    if (parseData.responseFormat === 'json') {
-        res.json(parseData.visualization);
-    }
-    if (parseData.responseFormat === 'text') {
-        res.json(parseData.textResponse);
-    }
-    if (parseData.responseFormat === "sql") {
-        res.json(`Generated SQL: ${parseData.generatedSQL}`);
-    }
+    // if (parseData.responseFormat === 'json') {
+    //     res.json(parseData.visualization);
+    // }
+    // if (parseData.responseFormat === 'text') {
+    //     res.json(parseData.textResponse);
+    // }
+    // if (parseData.responseFormat === "sql") {
+    //     res.json(`Generated SQL: ${parseData.generatedSQL}`);
+    // }
 
+    res.json(parseData)
 });
 
 app.post('/schema', async (req, res) => {
