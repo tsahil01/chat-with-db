@@ -26,7 +26,7 @@ type DatabaseSchema = {
   [tableName: string]: SchemaColumn[]
 }
 
-const DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres";
+const DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -35,6 +35,7 @@ export default function ChatInterface() {
   const [schema, setSchema] = useState<DatabaseSchema | null>(null)
   const [schemaLoading, setSchemaLoading] = useState(true)
   const [schemaCollapsed, setSchemaCollapsed] = useState(false)
+  const [runningSQL, setRunningSQL] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Fetch schema data first
@@ -48,13 +49,13 @@ export default function ChatInterface() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ DB_URL }),
-        });
+        })
 
         if (!response.ok) {
           throw new Error("Failed to fetch schema")
         }
-        const data = await response.json();
-        setSchema(data);
+        const data = await response.json()
+        setSchema(data)
 
         const schemaMessage: Message = {
           id: Date.now().toString(),
@@ -63,7 +64,7 @@ export default function ChatInterface() {
           timestamp: new Date(),
           ignoreUI: true,
         }
-        setMessages(prev => [...prev, schemaMessage]);
+        setMessages((prev) => [...prev, schemaMessage])
 
         const welcomeMessage: Message = {
           id: Date.now().toString(),
@@ -71,27 +72,39 @@ export default function ChatInterface() {
           role: "assistant",
           timestamp: new Date(),
         }
-        setMessages((prev) => [...prev, welcomeMessage]);
+        setMessages((prev) => [...prev, welcomeMessage])
       } catch (err) {
-        console.error("Error fetching schema:", err);
+        console.error("Error fetching schema:", err)
         const errorMessage: Message = {
           id: Date.now().toString(),
           content: "Hello! I had trouble loading the database schema. Please check your connection to the database.",
           role: "assistant",
           timestamp: new Date(),
         }
-        setMessages((prev) => [...prev, errorMessage]);
+        setMessages((prev) => [...prev, errorMessage])
       } finally {
         setSchemaLoading(false)
       }
     }
 
-    getSchema();
+    getSchema()
   }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  async function getDataFromDB(sql: string) {
+    const res = await fetch(`${BACKEND_URL}/sql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sql, DB_URL }),
+    })
+    const data = await res.json()
+    return data
+  }
 
   async function sendMessage(prompt: string) {
     const res = await fetch(`${BACKEND_URL}/chat`, {
@@ -99,10 +112,66 @@ export default function ChatInterface() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt, messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-    });
-    const data = await res.json();
-    console.log(data);
+      body: JSON.stringify({ prompt, messages: messages.map((m) => ({ role: m.role, content: m.content })) }),
+    })
+    const data = await res.json()
+    console.log("Response from backend:", data)
+
+    if (data.generatedSQL) {
+      setRunningSQL(true)
+      const sql = data.generatedSQL
+      const sqlMessage: Message = {
+        id: Date.now().toString(),
+        content: `Running SQL Query:\n\n ${sql}`,
+        role: "assistant",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, sqlMessage])
+
+      try {
+        const output = await getDataFromDB(sql)
+        // Format the results as a readable string
+        let resultContent = ""
+        if (output && output.length > 0) {
+          resultContent = `Query returned ${output.length} results:\n\n${JSON.stringify(output, null, 2)}`
+        } else {
+          resultContent = "Query executed successfully, but returned no results."
+        }
+
+        const resultMessage: Message = {
+          id: Date.now().toString(),
+          content: resultContent,
+          role: "assistant",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, resultMessage])
+      } catch (error) {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          content: `Error executing SQL: ${error.message}`,
+          role: "assistant",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      } finally {
+        setRunningSQL(false)
+        setIsLoading(false)
+      }
+    } else if (data.textResponse) {
+      const text = data.textResponse
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        content: text,
+        role: "assistant",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+      setIsLoading(false)
+    } else if (data.visualization) {
+      const visualization = data.visualization
+      // TODO: Handle the visualization
+      setIsLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,36 +184,27 @@ export default function ChatInterface() {
       role: "user",
       timestamp: new Date(),
     }
-
     setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
 
-    // Send message to backend
     await sendMessage(input)
   }
 
   const toggleSchema = () => {
-    setSchemaCollapsed(prev => !prev);
+    setSchemaCollapsed((prev) => !prev)
   }
   const renderSchema = () => {
-    if (!schema) return null;
+    if (!schema) return null
 
     return (
       <div className="border-b dark:border-gray-800">
-        <div
-          className="p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50"
-          onClick={toggleSchema}
-        >
+        <div className="p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50" onClick={toggleSchema}>
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             <h3 className="text-sm font-medium">Database Schema</h3>
           </div>
-          {schemaCollapsed ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
-          )}
+          {schemaCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </div>
 
         {!schemaCollapsed && (
@@ -167,8 +227,8 @@ export default function ChatInterface() {
           </div>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   if (schemaLoading) {
     return (
@@ -180,7 +240,7 @@ export default function ChatInterface() {
         </div>
         <p className="mt-4 text-muted-foreground">Loading database schema...</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -200,8 +260,8 @@ export default function ChatInterface() {
             <p>No messages yet. Start a conversation!</p>
           </div>
         ) : (
-          messages.map((message) => (
-            message.ignoreUI ? null :
+          messages.map((message) =>
+            message.ignoreUI ? null : (
               <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
@@ -223,7 +283,8 @@ export default function ChatInterface() {
                   </div>
                 </div>
               </div>
-          ))
+            ),
+          )
         )}
 
         {isLoading && (
@@ -271,3 +332,4 @@ export default function ChatInterface() {
     </div>
   )
 }
+
