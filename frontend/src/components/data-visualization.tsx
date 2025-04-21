@@ -104,7 +104,10 @@ export function DataVisualization({ data }: DataVisualizationProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">X-Axis / Category</label>
+            <label className="text-sm font-medium mb-1 block">
+              {chartType === "pie" && "Category"}
+              {chartType === "bar" && "X-Axis"}
+            </label>
             <Select value={xAxis} onValueChange={setXAxis}>
               <SelectTrigger>
                 <SelectValue placeholder="Select field" />
@@ -120,7 +123,10 @@ export function DataVisualization({ data }: DataVisualizationProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Y-Axis / Value</label>
+            <label className="text-sm font-medium mb-1 block">
+              {chartType === "pie" && "Value"}
+              {chartType === "bar" && "Y-Axis"}
+            </label>
             <Select value={yAxis} onValueChange={setYAxis}>
               <SelectTrigger>
                 <SelectValue placeholder="Select field" />
