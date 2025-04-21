@@ -1,7 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
-import { Message } from './types';
 import { chat } from './chat';
 import { parseResponse } from './parseQuery';
 import cors from 'cors';
@@ -30,27 +29,20 @@ app.get('/', (req, res) => {
 
 
 app.post('/chat', async (req, res) => {
-    const { prompt } = req.body;
-    const { messages } = req.body;
-    // const messages: Message[] = [{ // have to get this from frontend. We have to delete it later
-    //     role: 'user',
-    //     content: `Here is the schema information: ${JSON.stringify(schema)}`
-    // }];
-    const response = await chat(messages, { role: 'user', content: prompt });
-    const parseData = await parseResponse(response);
-    console.log("\nparseData: ", parseData);
+    try {
+        console.log("req.body: ", req.body);
+        const { prompt } = req.body;
+        const { messages } = req.body;
 
-    // if (parseData.responseFormat === 'json') {
-    //     res.json(parseData.visualization);
-    // }
-    // if (parseData.responseFormat === 'text') {
-    //     res.json(parseData.textResponse);
-    // }
-    // if (parseData.responseFormat === "sql") {
-    //     res.json(`Generated SQL: ${parseData.generatedSQL}`);
-    // }
+        const response = await chat(messages, { role: 'user', content: prompt });
+        console.log("response: ", response);
+        const parseData = await parseResponse(response);
 
-    res.json(parseData)
+        res.json(parseData)
+    } catch (error) {
+        console.error("error: ", error);
+        res.status(500).json({ error: 'Error processing chat request' });
+    }
 });
 
 app.post('/schema', async (req, res) => {

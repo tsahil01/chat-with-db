@@ -11,8 +11,7 @@ import type { Message, DatabaseSchema } from "@/lib/types"
 import { Database } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
-const DB_URL =
-  "postgresql://ai-website_owner:npg_43NPyvfDGTMB@ep-curly-wildflower-a59qbo1k-pooler.us-east-2.aws.neon.tech/ai-website?sslmode=requi"
+const DB_URL = "postgresql://postgres:postgres@localhost:5432/chatdb"
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -20,8 +19,7 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const [schema, setSchema] = useState<DatabaseSchema | null>(null)
   const [schemaLoading, setSchemaLoading] = useState(true)
-  const [schemaCollapsed, setSchemaCollapsed] = useState(false)
-  const [runningSQL, setRunningSQL] = useState(false)
+  const [schemaCollapsed, setSchemaCollapsed] = useState(true)
 
   // Fetch schema data first
   useEffect(() => {
@@ -74,7 +72,6 @@ export default function ChatInterface() {
     console.log("Response from backend:", data)
 
     if (data.generatedSQL) {
-      setRunningSQL(true)
       const sql = data.generatedSQL
       const sqlMessage: Message = {
         id: Date.now().toString(),
@@ -104,13 +101,12 @@ export default function ChatInterface() {
       } catch (error) {
         const errorMessage: Message = {
           id: Date.now().toString(),
-          content: `**Error executing SQL**\n\n\`\`\`\n${error.message}\n\`\`\``,
+          content: `**Error executing SQL**\n\n\`\`\`\n${(error as Error).message}\n\`\`\``,
           role: "assistant",
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, errorMessage])
       } finally {
-        setRunningSQL(false)
         setIsLoading(false)
       }
     } else if (data.textResponse) {
@@ -124,8 +120,6 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, assistantMessage])
       setIsLoading(false)
     } else if (data.visualization) {
-      const visualization = data.visualization
-      // TODO: Handle the visualization
       setIsLoading(false)
     }
   }
