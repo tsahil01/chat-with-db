@@ -49,7 +49,7 @@ export function DataTable({ data }: DataTableProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Query Results</h3>
+        {/* <h3 className="text-sm font-medium">Query Results</h3> */}
         <div className="flex gap-2">
           <Button
             variant="outline"

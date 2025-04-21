@@ -30,12 +30,10 @@ app.get('/', (req, res) => {
 
 app.post('/chat', async (req, res) => {
     try {
-        console.log("req.body: ", req.body);
         const { prompt } = req.body;
         const { messages } = req.body;
 
         const response = await chat(messages, { role: 'user', content: prompt });
-        console.log("response: ", response);
         const parseData = await parseResponse(response);
 
         res.json(parseData)

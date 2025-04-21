@@ -41,7 +41,7 @@ export default function ChatInterface() {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
           content:
-            "# Welcome to Chat with DB 👋\n\nI can help you query the database using natural language. Try asking questions about the data or request specific information.\n\n**Examples:**\n- Show me all models\n- Which model is set as default?\n- Count models by provider",
+            "# Welcome to Chat with DB 👋\n\nI can help you query the database using natural language. Try asking questions about the data or request specific information.\n\n**Examples:**\n- Show me product data\n- Which user has least orders?\n- Count models by provider",
           role: "assistant",
           timestamp: new Date(),
         }
@@ -159,7 +159,7 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen container mx-auto">
       {/* Chat header */}
       <header className="border-b dark:border-gray-800 p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
