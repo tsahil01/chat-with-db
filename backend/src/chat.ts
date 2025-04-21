@@ -11,23 +11,33 @@ const client = new OpenAI({
 });
 
 export async function chat(messages: Message[], newMessage: Message) {
-    if (!messages.some(msg => msg.role === "system")) {
-        messages.unshift({ role: "system", content: systemPrompt });
+    try {
+        if (!messages.some(msg => msg.role === "system")) {
+            messages.unshift({ role: "system", content: systemPrompt });
+        }
+        messages.push(newMessage);
+
+        const stream = await client.chat.completions.create({
+            messages: messages,
+            model: 'google/gemini-2.0-flash-thinking-exp:free',
+            stream: true
+        });
+
+        let fullResponse = '';
+        for await (const chunk of stream) {
+            if (!chunk.choices || !Array.isArray(chunk.choices) || chunk.choices.length === 0) {
+                console.warn("Invalid chunk received:", chunk);
+                continue;
+            }
+
+            const data = chunk.choices[0]?.delta?.content || '';
+            fullResponse += data;
+        }
+
+        return fullResponse;
+    } catch (error) {
+        console.error("Error during chat completion:", error);
+        throw error;
     }
-    messages.push(newMessage);
-
-    const stream = await client.chat.completions.create({
-        messages: messages,
-        model: 'google/gemini-2.0-flash-thinking-exp:free',
-        stream: true
-    });
-
-    let fullResponse = '';
-    for await (const chunk of stream) {
-        const data = chunk.choices[0]?.delta?.content || '';
-        process.stdout.write(data);
-        fullResponse += data;
-    }
-
-    return fullResponse;
 }
+
