@@ -75,21 +75,28 @@ app.post('/schema', async (req, res) => {
 
 })
 
-app.post('/sql', async (req, res) => {
+app.post('/sql', async (req: any, res: any) => {
     const { sql, DB_URL } = req.body;
 
-    try {
+    const forbidden = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|merge|call|exec|execute)\b/i;
 
-        const pool = await new Pool({
+    // Reject if the SQL contains any dangerous statements
+    if (forbidden.test(sql)) {
+        return res.status(403).json({ error: 'Only read-only SQL queries are allowed.' });
+    }
+
+    try {
+        const pool = new Pool({
             connectionString: DB_URL
         });
+
         const result = await pool.query(sql);
         res.json(result.rows);
     } catch (error) {
         console.error("error: ", error);
         res.status(500).json({ error: 'Error executing SQL query' });
     }
-})
+});
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

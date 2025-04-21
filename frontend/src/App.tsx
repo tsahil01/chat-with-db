@@ -8,6 +8,8 @@ import { MessageList } from "@/components/message-list"
 import { MessageInput } from "@/components/message-input"
 import { getSchema, sendChatMessage, executeSQL } from "@/lib/api"
 import type { Message, DatabaseSchema } from "@/lib/types"
+import { Database } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 const DB_URL =
   "postgresql://ai-website_owner:npg_43NPyvfDGTMB@ep-curly-wildflower-a59qbo1k-pooler.us-east-2.aws.neon.tech/ai-website?sslmode=requi"
@@ -40,7 +42,8 @@ export default function ChatInterface() {
 
         const welcomeMessage: Message = {
           id: Date.now().toString(),
-          content: "Hello! I can help you query the database. The database schema has been loaded.",
+          content:
+            "# Welcome to Chat with DB 👋\n\nI can help you query the database using natural language. Try asking questions about the data or request specific information.\n\n**Examples:**\n- Show me all models\n- Which model is set as default?\n- Count models by provider",
           role: "assistant",
           timestamp: new Date(),
         }
@@ -49,7 +52,8 @@ export default function ChatInterface() {
         console.error("Error fetching schema:", err)
         const errorMessage: Message = {
           id: Date.now().toString(),
-          content: "Hello! I had trouble loading the database schema. Please check your connection to the database.",
+          content:
+            "**Connection Error**\n\nI had trouble loading the database schema. Please check your connection to the database.",
           role: "assistant",
           timestamp: new Date(),
         }
@@ -74,7 +78,7 @@ export default function ChatInterface() {
       const sql = data.generatedSQL
       const sqlMessage: Message = {
         id: Date.now().toString(),
-        content: `Running SQL Query:\n\n ${sql}`,
+        content: `Running SQL Query:\n\n\`\`\`sql\n${sql}\n\`\`\``,
         role: "assistant",
         timestamp: new Date(),
       }
@@ -100,7 +104,7 @@ export default function ChatInterface() {
       } catch (error) {
         const errorMessage: Message = {
           id: Date.now().toString(),
-          content: `Error executing SQL: ${error.message}`,
+          content: `**Error executing SQL**\n\n\`\`\`\n${error.message}\n\`\`\``,
           role: "assistant",
           timestamp: new Date(),
         }
@@ -163,8 +167,14 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-screen">
       {/* Chat header */}
-      <header className="border-b dark:border-gray-800 p-4">
-        <h1 className="text-xl font-semibold">Chat Interface</h1>
+      <header className="border-b dark:border-gray-800 p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          <h1 className="text-xl font-semibold">Chat with DB</h1>
+        </div>
+        <Badge variant="outline" className="px-2 py-1">
+          {schema ? Object.keys(schema).length : 0} Tables
+        </Badge>
       </header>
 
       {/* Collapsible schema panel */}
