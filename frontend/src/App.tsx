@@ -2,31 +2,15 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
-import { Send, ChevronDown, ChevronUp, Database } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
-import { BACKEND_URL } from "./lib/constant"
+import { useState, useEffect } from "react"
+import { SchemaViewer } from "@/components/schema-viewer"
+import { MessageList } from "@/components/message-list"
+import { MessageInput } from "@/components/message-input"
+import { getSchema, sendChatMessage, executeSQL } from "@/lib/api"
+import type { Message, DatabaseSchema } from "@/lib/types"
 
-type Message = {
-  id: string
-  content: string
-  role: "user" | "assistant"
-  timestamp: Date
-  ignoreUI?: boolean
-}
-
-type SchemaColumn = {
-  column_name: string
-  data_type: string
-}
-
-type DatabaseSchema = {
-  [tableName: string]: SchemaColumn[]
-}
-
-const DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
+const DB_URL =
+  "postgresql://ai-website_owner:npg_43NPyvfDGTMB@ep-curly-wildflower-a59qbo1k-pooler.us-east-2.aws.neon.tech/ai-website?sslmode=requi"
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -36,25 +20,13 @@ export default function ChatInterface() {
   const [schemaLoading, setSchemaLoading] = useState(true)
   const [schemaCollapsed, setSchemaCollapsed] = useState(false)
   const [runningSQL, setRunningSQL] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Fetch schema data first
   useEffect(() => {
-    async function getSchema() {
+    async function fetchSchema() {
       try {
         setSchemaLoading(true)
-        const response = await fetch(`${BACKEND_URL}/schema`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ DB_URL }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch schema")
-        }
-        const data = await response.json()
+        const data = await getSchema(DB_URL)
         setSchema(data)
 
         const schemaMessage: Message = {
@@ -87,34 +59,14 @@ export default function ChatInterface() {
       }
     }
 
-    getSchema()
+    fetchSchema()
   }, [])
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  async function getDataFromDB(sql: string) {
-    const res = await fetch(`${BACKEND_URL}/sql`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ sql, DB_URL }),
-    })
-    const data = await res.json()
-    return data
-  }
-
-  async function sendMessage(prompt: string) {
-    const res = await fetch(`${BACKEND_URL}/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt, messages: messages.map((m) => ({ role: m.role, content: m.content })) }),
-    })
-    const data = await res.json()
+  async function handleSendMessage(prompt: string) {
+    const data = await sendChatMessage(
+      prompt,
+      messages.map((m) => ({ role: m.role, content: m.content })),
+    )
     console.log("Response from backend:", data)
 
     if (data.generatedSQL) {
@@ -129,7 +81,7 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, sqlMessage])
 
       try {
-        const output = await getDataFromDB(sql)
+        const output = await executeSQL(sql, DB_URL)
         // Format the results as a readable string
         let resultContent = ""
         if (output && output.length > 0) {
@@ -188,46 +140,11 @@ export default function ChatInterface() {
     setInput("")
     setIsLoading(true)
 
-    await sendMessage(input)
+    await handleSendMessage(input)
   }
 
   const toggleSchema = () => {
     setSchemaCollapsed((prev) => !prev)
-  }
-  const renderSchema = () => {
-    if (!schema) return null
-
-    return (
-      <div className="border-b dark:border-gray-800">
-        <div className="p-3 flex items-center justify-between cursor-pointer hover:bg-muted/50" onClick={toggleSchema}>
-          <div className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <h3 className="text-sm font-medium">Database Schema</h3>
-          </div>
-          {schemaCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </div>
-
-        {!schemaCollapsed && (
-          <div className="p-4 bg-muted/30">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(schema).map(([tableName, columns]) => (
-                <div key={tableName} className="border rounded-md p-3 bg-background">
-                  <h4 className="font-medium text-sm mb-1">{tableName}</h4>
-                  <div className="text-xs space-y-1">
-                    {columns.map((col, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span className="text-primary">{col.column_name}</span>
-                        <span className="text-muted-foreground">{col.data_type}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    )
   }
 
   if (schemaLoading) {
@@ -251,85 +168,13 @@ export default function ChatInterface() {
       </header>
 
       {/* Collapsible schema panel */}
-      {renderSchema()}
+      <SchemaViewer schema={schema} schemaCollapsed={schemaCollapsed} toggleSchema={toggleSchema} />
 
       {/* Messages container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            <p>No messages yet. Start a conversation!</p>
-          </div>
-        ) : (
-          messages.map((message) =>
-            message.ignoreUI ? null : (
-              <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-lg p-4",
-                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
-                  )}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <div
-                    className={cn(
-                      "text-xs mt-2",
-                      message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground",
-                    )}
-                  >
-                    {message.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                </div>
-              </div>
-            ),
-          )
-        )}
-
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-muted rounded-lg p-4 max-w-[80%]">
-              <div className="flex space-x-2">
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
+      <MessageList messages={messages} isLoading={isLoading} />
 
       {/* Input area */}
-      <div className="border-t dark:border-gray-800 p-4">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <div className="flex-1 relative">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="min-h-[60px] resize-none pr-12"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSubmit(e)
-                }
-              }}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="absolute right-2 bottom-2"
-              disabled={isLoading || !input.trim()}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </form>
-      </div>
+      <MessageInput input={input} setInput={setInput} handleSubmit={handleSubmit} isLoading={isLoading} />
     </div>
   )
 }
-
